@@ -20,30 +20,27 @@
   --label: "１セグメント縦";
   --accent: #2563eb;
   --accent-soft: #dbeafe;
+  /* 1 セグメント: 各パネル = ビューポート 1 枚分、縦に積んでスクロール */
   --cols: 1fr;
-  --rows: 1fr auto;
+  --rows: 100dvh 100dvh;
   --col-gap: 0px;
-  --row-gap: 16px;
+  --row-gap: 0px;
 }
 @media (orientation: landscape) {
   :root {
     --label: "１セグメント横";
     --accent: #0891b2;
     --accent-soft: #cffafe;
-    --cols: 1fr 1fr;
-    --rows: 1fr;
-    --col-gap: 16px;
-    --row-gap: 0px;
   }
 }
-/* 縦ヒンジ（左右 2 セグメント） */
+/* 縦ヒンジ（左右 2 セグメント）: 各パネル = セグメント 1 枚分 */
 @media (horizontal-viewport-segments: 2) {
   :root {
     --label: "２セグメント縦平板";
     --accent: #7c3aed;
     --accent-soft: #ede9fe;
-    --cols: 1fr env(viewport-segment-width 1 0);
-    --rows: 1fr;
+    --cols: env(viewport-segment-width 0 0) env(viewport-segment-width 1 0);
+    --rows: 100dvh;
     --col-gap: calc(env(viewport-segment-left 1 0) - env(viewport-segment-right 0 0));
     --row-gap: 0px;
   }
@@ -55,14 +52,14 @@
     --accent-soft: #fef3c7;
   }
 }
-/* 横ヒンジ（上下 2 セグメント） */
+/* 横ヒンジ（上下 2 セグメント）: 各パネル = セグメント 1 枚分 */
 @media (vertical-viewport-segments: 2) {
   :root {
     --label: "２セグメント横平板";
     --accent: #059669;
     --accent-soft: #d1fae5;
     --cols: 1fr;
-    --rows: 1fr env(viewport-segment-height 0 1);
+    --rows: env(viewport-segment-height 0 0) env(viewport-segment-height 0 1);
     --col-gap: 0px;
     --row-gap: calc(env(viewport-segment-top 0 1) - env(viewport-segment-bottom 0 0));
   }
@@ -76,10 +73,11 @@
 }
 
 /* =========================================================
-   2. レイアウト（セグメント境界に沿った grid）
+   2. パネル配置（セグメント数だけで決まる）
    ========================================================= */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100dvh; }
+html, body { margin: 0; }
+html { scroll-snap-type: y mandatory; }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
   color: #111827;
@@ -92,14 +90,15 @@ body {
   grid-template-rows: var(--rows);
   column-gap: var(--col-gap);
   row-gap: var(--row-gap);
-  height: 100%;
-  padding: 16px;
 }
-.stage > * { min-width: 0; min-height: 0; overflow: auto; }
-.panel { background: #fff; border-radius: 12px; padding: 16px; }
+.panel {
+  min-width: 0; min-height: 0; overflow: auto;
+  scroll-snap-align: start;
+  background: #fff; padding: 16px;
+}
+/* 2 セグメント: ページ全体はスクロールさせず、各パネル内でスクロール */
 @media (horizontal-viewport-segments: 2), (vertical-viewport-segments: 2) {
-  .stage { padding: 0; }
-  .panel { border-radius: 0; }
+  html, body { height: 100dvh; overflow: hidden; }
 }
 /* 本開き: 左 = サブ、右 = メイン */
 @media (horizontal-viewport-segments: 2) and (device-posture: folded) {
@@ -111,22 +110,31 @@ body {
 }
 
 /* =========================================================
-   3. メインパネル: 状態名を content で表示
+   3. パネル内コンテンツの向き（オリエンテーションに連動）
+   ---------------------------------------------------------
+   縦持ち: h1 は縦書き、カードは 1 列
+   横持ち: h1 は横書き、カードは 2 列
    ========================================================= */
 .primary { display: grid; place-items: center; }
-.primary h1 { margin: 0; font-size: clamp(1.5rem, 6vw, 3rem); color: var(--accent); }
+.primary h1 { margin: 0; font-size: clamp(1.5rem, 6vmin, 3rem); color: var(--accent); }
 .primary h1::before { content: var(--label); }
+.secondary { display: grid; gap: 8px; align-content: start; }
+
+@media (orientation: portrait) {
+  .primary h1 { writing-mode: vertical-rl; }
+  .secondary { grid-template-columns: 1fr; }
+}
+@media (orientation: landscape) {
+  .primary h1 { writing-mode: horizontal-tb; }
+  .secondary { grid-template-columns: 1fr 1fr; }
+}
 
 /* =========================================================
-   4. サブパネル: メディア特性ごとのカード（非マッチは無効表記）
+   4. サブパネルのカード（非マッチは無効表記）
    ---------------------------------------------------------
    .q はマッチ判定だけを持つラッパー（--on）。
    見た目は中の .card が style() コンテナクエリで --on を参照して決める。
    ========================================================= */
-.secondary {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 8px; align-content: start;
-}
 .q { display: grid; }
 .card {
   display: flex; justify-content: space-between; gap: 8px;
