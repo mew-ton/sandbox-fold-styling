@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fold Posture Styling</title>
+<style>
+/* =========================================================
+   1. 状態の判定（6 状態はここだけで決まる）
+   ---------------------------------------------------------
+   後勝ちのカスケードで上書きする。
+     既定（メディア特性 非対応ブラウザを含む） → 1 セグメント
+     セグメント数 2 を検出               → 平板
+     さらに device-posture: folded        → 半開き
+   縦 / 横 … 1 セグメント時は画面の向き、2 セグメント時はヒンジの向き
+     縦ヒンジ = 左右 2 セグメント = horizontal-viewport-segments: 2
+     横ヒンジ = 上下 2 セグメント = vertical-viewport-segments: 2
+   ========================================================= */
+:root {
+  --label: "１セグメント縦";
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --cols: 1fr;
+  --rows: 1fr auto;
+  --col-gap: 0px;
+  --row-gap: 16px;
+}
+@media (orientation: landscape) {
+  :root {
+    --label: "１セグメント横";
+    --accent: #0891b2;
+    --accent-soft: #cffafe;
+    --cols: 1fr 1fr;
+    --rows: 1fr;
+    --col-gap: 16px;
+    --row-gap: 0px;
+  }
+}
+/* 縦ヒンジ（左右 2 セグメント） */
+@media (horizontal-viewport-segments: 2) {
+  :root {
+    --label: "２セグメント縦平板";
+    --accent: #7c3aed;
+    --accent-soft: #ede9fe;
+    --cols: 1fr env(viewport-segment-width 1 0);
+    --rows: 1fr;
+    --col-gap: calc(env(viewport-segment-left 1 0) - env(viewport-segment-right 0 0));
+    --row-gap: 0px;
+  }
+}
+@media (horizontal-viewport-segments: 2) and (device-posture: folded) {
+  :root {
+    --label: "本開き";
+    --accent: #b45309;
+    --accent-soft: #fef3c7;
+  }
+}
+/* 横ヒンジ（上下 2 セグメント） */
+@media (vertical-viewport-segments: 2) {
+  :root {
+    --label: "２セグメント横平板";
+    --accent: #059669;
+    --accent-soft: #d1fae5;
+    --cols: 1fr;
+    --rows: 1fr env(viewport-segment-height 0 1);
+    --col-gap: 0px;
+    --row-gap: calc(env(viewport-segment-top 0 1) - env(viewport-segment-bottom 0 0));
+  }
+}
+@media (vertical-viewport-segments: 2) and (device-posture: folded) {
+  :root {
+    --label: "テーブルトップ";
+    --accent: #dc2626;
+    --accent-soft: #fee2e2;
+  }
+}
+
+/* =========================================================
+   2. レイアウト（セグメント境界に沿った grid）
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100dvh; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  color: #111827;
+  background: var(--accent-soft);
+  transition: background-color .3s;
+}
+.stage {
+  display: grid;
+  grid-template-columns: var(--cols);
+  grid-template-rows: var(--rows);
+  column-gap: var(--col-gap);
+  row-gap: var(--row-gap);
+  height: 100%;
+  padding: 16px;
+}
+.stage > * { min-width: 0; min-height: 0; overflow: auto; }
+.panel { background: #fff; border-radius: 12px; padding: 16px; }
+@media (horizontal-viewport-segments: 2), (vertical-viewport-segments: 2) {
+  .stage { padding: 0; }
+  .panel { border-radius: 0; }
+}
+/* 本開き: 左 = サブ、右 = メイン */
+@media (horizontal-viewport-segments: 2) and (device-posture: folded) {
+  .secondary { order: -1; }
+}
+/* テーブルトップ: 下段 = サブを暗色に */
+@media (vertical-viewport-segments: 2) and (device-posture: folded) {
+  .secondary { background: #1f2937; }
+}
+
+/* =========================================================
+   3. メインパネル: 状態名を content で表示
+   ========================================================= */
+.primary { display: grid; place-items: center; }
+.primary h1 { margin: 0; font-size: clamp(1.5rem, 6vw, 3rem); color: var(--accent); }
+.primary h1::before { content: var(--label); }
+
+/* =========================================================
+   4. サブパネル: メディア特性ごとのカード（非マッチは無効表記）
+   ---------------------------------------------------------
+   .q はマッチ判定だけを持つラッパー（--on）。
+   見た目は中の .card が style() コンテナクエリで --on を参照して決める。
+   ========================================================= */
+.secondary {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px; align-content: start;
+}
+.q { display: grid; }
+.card {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem;
+  padding: 10px 12px; border: 2px solid #d1d5db; border-radius: 8px;
+  background: #f3f4f6; color: #9ca3af; text-decoration: line-through;
+}
+.card::after { content: "無効"; font-weight: 700; flex-shrink: 0; }
+
+@media (orientation: portrait)           { .q-portrait  { --on: 1; } }
+@media (orientation: landscape)          { .q-landscape { --on: 1; } }
+@media (horizontal-viewport-segments: 1) { .q-h1        { --on: 1; } }
+@media (horizontal-viewport-segments: 2) { .q-h2        { --on: 1; } }
+@media (vertical-viewport-segments: 1)   { .q-v1        { --on: 1; } }
+@media (vertical-viewport-segments: 2)   { .q-v2        { --on: 1; } }
+@media (device-posture: continuous)      { .q-cont      { --on: 1; } }
+@media (device-posture: folded)          { .q-fold      { --on: 1; } }
+
+@container style(--on: 1) {
+  .card {
+    border-color: var(--accent); background: var(--accent-soft);
+    color: #111827; text-decoration: none;
+  }
+  .card::after { content: "有効"; color: var(--accent); }
+}
+</style>
+</head>
+<body>
+<main class="stage">
+  <section class="panel primary"><h1></h1></section>
+  <aside class="panel secondary">
+    <div class="q q-portrait"><div class="card">(orientation: portrait)</div></div>
+    <div class="q q-landscape"><div class="card">(orientation: landscape)</div></div>
+    <div class="q q-h1"><div class="card">(horizontal-viewport-segments: 1)</div></div>
+    <div class="q q-h2"><div class="card">(horizontal-viewport-segments: 2)</div></div>
+    <div class="q q-v1"><div class="card">(vertical-viewport-segments: 1)</div></div>
+    <div class="q q-v2"><div class="card">(vertical-viewport-segments: 2)</div></div>
+    <div class="q q-cont"><div class="card">(device-posture: continuous)</div></div>
+    <div class="q q-fold"><div class="card">(device-posture: folded)</div></div>
+  </aside>
+</main>
+</body>
+</html>
