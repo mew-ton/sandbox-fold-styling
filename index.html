@@ -13,12 +13,19 @@
 
      セグメント数   姿勢         向き        → 状態
      ----------------------------------------------------------
-     1×1           （不問）     portrait    → １セグメント縦
-     1×1           （不問）     landscape   → １セグメント横
+     1×1           continuous   portrait    → １セグメント縦
+     1×1           continuous   landscape   → １セグメント横
+     1×1           folded       （不問）    → テーブルトップ（※）
      横に 2        continuous   （不問）    → ２セグメント縦平板（縦ヒンジ）
      横に 2        folded       （不問）    → 本開き
      縦に 2        continuous   （不問）    → ２セグメント横平板（横ヒンジ）
      縦に 2        folded       （不問）    → テーブルトップ
+
+   ※ 1 枚画面の折りたたみ端末をテーブルトップにすると、OS がパネルを
+     下半分に出す（Samsung Flex モード等）ため Chrome には上半分だけが
+     渡り、セグメントは 1×1 になる。半開きでセグメントが 1 になるのは
+     この姿勢だけなので、1×1 かつ folded をテーブルトップとみなす。
+     本開きはセグメント 2 で報告されるので衝突しない。
 
    縦 / 横 … 1 セグメント時は画面の向き、2 セグメント時はヒンジの向き
      縦ヒンジ = 左右 2 セグメント = horizontal-viewport-segments: 2
@@ -37,7 +44,7 @@
 }
 
 /* １セグメント縦: 各パネル = ビューポート 1 枚分、縦に積んでスクロール */
-@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (orientation: portrait) {
+@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: continuous) and (orientation: portrait) {
   :root {
     --label: "１セグメント縦";
     --accent: #2563eb;
@@ -50,7 +57,7 @@
 }
 
 /* １セグメント横: 同上 */
-@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (orientation: landscape) {
+@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: continuous) and (orientation: landscape) {
   :root {
     --label: "１セグメント横";
     --accent: #0891b2;
@@ -60,6 +67,20 @@
     --col-gap: 0px;
     --row-gap: 0px;
   }
+}
+
+/* テーブルトップ（1×1 形）: ビューポート全体が上段にあたるので、配置は 1 セグメントと同じ */
+@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: folded) {
+  :root {
+    --label: "テーブルトップ";
+    --accent: #dc2626;
+    --accent-soft: #fee2e2;
+    --cols: 1fr;
+    --rows: 100dvh 100dvh;
+    --col-gap: 0px;
+    --row-gap: 0px;
+  }
+  .secondary { background: #1f2937; }
 }
 
 /* ２セグメント縦平板: 左右のセグメント実寸に各パネルを合わせ、ヒンジ幅を空ける */
@@ -105,7 +126,7 @@
   html, body { height: 100dvh; overflow: hidden; }
 }
 
-/* テーブルトップ: 配置は横平板と同じ。下段 = サブを暗色に */
+/* テーブルトップ（2 セグメント形）: 配置は横平板と同じ。下段 = サブを暗色に */
 @media (vertical-viewport-segments: 2) and (device-posture: folded) {
   :root {
     --label: "テーブルトップ";
