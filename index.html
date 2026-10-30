@@ -13,8 +13,8 @@
 
      セグメント数   姿勢         向き        → 状態
      ----------------------------------------------------------
-     1×1           continuous   portrait    → １セグメント縦
-     1×1           continuous   landscape   → １セグメント横
+     1×1           continuous   画面が縦    → １セグメント縦
+     1×1           continuous   画面が横    → １セグメント横
      1×1           folded       （不問）    → テーブルトップ（※）
      横に 2        continuous   （不問）    → ２セグメント縦平板（縦ヒンジ）
      横に 2        folded       （不問）    → 本開き
@@ -28,6 +28,10 @@
      本開きはセグメント 2 で報告されるので衝突しない。
 
    縦 / 横 … 1 セグメント時は画面の向き、2 セグメント時はヒンジの向き
+   画面の向きは orientation ではなく device-aspect-ratio で判定する。
+   orientation はビューポートの縦横比で決まるため、ほぼ正方形の内側画面では
+   ツールバー分だけ高さが減って縦持ちでも landscape になる。
+   device-aspect-ratio は画面そのものの縦横比で、Android では持ち方に合わせて回転する。
      縦ヒンジ = 左右 2 セグメント = horizontal-viewport-segments: 2
      横ヒンジ = 上下 2 セグメント = vertical-viewport-segments: 2
    どのブロックにも当たらない場合（メディア特性 非対応など）は
@@ -44,7 +48,7 @@
 }
 
 /* １セグメント縦: 各パネル = ビューポート 1 枚分、縦に積んでスクロール */
-@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: continuous) and (orientation: portrait) {
+@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: continuous) and (device-aspect-ratio <= 1/1) {
   :root {
     --label: "１セグメント縦";
     --accent: #2563eb;
@@ -57,7 +61,7 @@
 }
 
 /* １セグメント横: 同上 */
-@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: continuous) and (orientation: landscape) {
+@media (horizontal-viewport-segments: 1) and (vertical-viewport-segments: 1) and (device-posture: continuous) and (device-aspect-ratio > 1/1) {
   :root {
     --label: "１セグメント横";
     --accent: #0891b2;
@@ -167,7 +171,7 @@ body {
 }
 
 /* =========================================================
-   3. パネル内コンテンツの向き（オリエンテーションに連動）
+   3. パネル内コンテンツの向き（画面の向きに連動）
    ---------------------------------------------------------
    縦持ち: h1 は縦書き、カードは 1 列
    横持ち: h1 は横書き、カードは 2 列
@@ -177,11 +181,11 @@ body {
 .primary h1::before { content: var(--label); }
 .secondary { display: grid; gap: 8px; align-content: start; }
 
-@media (orientation: portrait) {
+@media (device-aspect-ratio <= 1/1) {
   .primary h1 { writing-mode: vertical-rl; }
   .secondary { grid-template-columns: 1fr; }
 }
-@media (orientation: landscape) {
+@media (device-aspect-ratio > 1/1) {
   .primary h1 { writing-mode: horizontal-tb; }
   .secondary { grid-template-columns: 1fr 1fr; }
 }
@@ -203,6 +207,8 @@ body {
 
 @media (orientation: portrait)           { .q-portrait  { --on: 1; } }
 @media (orientation: landscape)          { .q-landscape { --on: 1; } }
+@media (device-aspect-ratio <= 1/1)      { .q-dar-p     { --on: 1; } }
+@media (device-aspect-ratio > 1/1)       { .q-dar-l     { --on: 1; } }
 @media (horizontal-viewport-segments: 1) { .q-h1        { --on: 1; } }
 @media (horizontal-viewport-segments: 2) { .q-h2        { --on: 1; } }
 @media (vertical-viewport-segments: 1)   { .q-v1        { --on: 1; } }
@@ -225,6 +231,8 @@ body {
   <aside class="panel secondary">
     <div class="q q-portrait"><div class="card">(orientation: portrait)</div></div>
     <div class="q q-landscape"><div class="card">(orientation: landscape)</div></div>
+    <div class="q q-dar-p"><div class="card">(device-aspect-ratio <= 1/1)</div></div>
+    <div class="q q-dar-l"><div class="card">(device-aspect-ratio > 1/1)</div></div>
     <div class="q q-h1"><div class="card">(horizontal-viewport-segments: 1)</div></div>
     <div class="q q-h2"><div class="card">(horizontal-viewport-segments: 2)</div></div>
     <div class="q q-v1"><div class="card">(vertical-viewport-segments: 1)</div></div>
