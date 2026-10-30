@@ -8,19 +8,23 @@
 /* =========================================================
    1. 状態の判定（6 状態はここだけで決まる）
    ---------------------------------------------------------
-   後勝ちのカスケードで上書きする。
-     既定（メディア特性 非対応ブラウザを含む） → 1 セグメント
-     セグメント数 2 を検出               → 平板
-     さらに device-posture: folded        → 半開き
+   後勝ちのカスケードで上書きする。下に行くほど優先。
+     1) 既定（メディア特性 非対応ブラウザを含む） → 1 セグメント縦 / 横
+     2) device-posture: folded だけ分かる場合  → 向きで 本開き / テーブルトップ
+        （viewport-segments 未対応・未報告ブラウザ向けフォールバック。2 等分で配置）
+     3) viewport-segments が 2 の場合         → 平板、さらに folded なら 半開き
+        （セグメント実寸で配置。2) を上書きする）
    縦 / 横 … 1 セグメント時は画面の向き、2 セグメント時はヒンジの向き
      縦ヒンジ = 左右 2 セグメント = horizontal-viewport-segments: 2
      横ヒンジ = 上下 2 セグメント = vertical-viewport-segments: 2
    ========================================================= */
+
+/* --- 1) 1 セグメント --- */
 :root {
   --label: "１セグメント縦";
   --accent: #2563eb;
   --accent-soft: #dbeafe;
-  /* 1 セグメント: 各パネル = ビューポート 1 枚分、縦に積んでスクロール */
+  /* 各パネル = ビューポート 1 枚分、縦に積んでスクロール */
   --cols: 1fr;
   --rows: 100dvh 100dvh;
   --col-gap: 0px;
@@ -33,6 +37,32 @@
     --accent-soft: #cffafe;
   }
 }
+
+/* --- 2) 姿勢だけで判定するフォールバック --- */
+@media (device-posture: folded) and (orientation: portrait) {
+  :root {
+    --label: "本開き";
+    --accent: #b45309;
+    --accent-soft: #fef3c7;
+    --cols: 1fr 1fr;
+    --rows: 100dvh;
+    --col-gap: 0px;
+    --row-gap: 0px;
+  }
+}
+@media (device-posture: folded) and (orientation: landscape) {
+  :root {
+    --label: "テーブルトップ";
+    --accent: #dc2626;
+    --accent-soft: #fee2e2;
+    --cols: 1fr;
+    --rows: 50dvh 50dvh;
+    --col-gap: 0px;
+    --row-gap: 0px;
+  }
+}
+
+/* --- 3) セグメント数で判定（最優先） --- */
 /* 縦ヒンジ（左右 2 セグメント）: 各パネル = セグメント 1 枚分 */
 @media (horizontal-viewport-segments: 2) {
   :root {
@@ -97,15 +127,17 @@ body {
   background: #fff; padding: 16px;
 }
 /* 2 セグメント: ページ全体はスクロールさせず、各パネル内でスクロール */
-@media (horizontal-viewport-segments: 2), (vertical-viewport-segments: 2) {
+@media (horizontal-viewport-segments: 2), (vertical-viewport-segments: 2), (device-posture: folded) {
   html, body { height: 100dvh; overflow: hidden; }
 }
 /* 本開き: 左 = サブ、右 = メイン */
-@media (horizontal-viewport-segments: 2) and (device-posture: folded) {
+@media (device-posture: folded) and (orientation: portrait),
+       (horizontal-viewport-segments: 2) and (device-posture: folded) {
   .secondary { order: -1; }
 }
 /* テーブルトップ: 下段 = サブを暗色に */
-@media (vertical-viewport-segments: 2) and (device-posture: folded) {
+@media (device-posture: folded) and (orientation: landscape),
+       (vertical-viewport-segments: 2) and (device-posture: folded) {
   .secondary { background: #1f2937; }
 }
 
